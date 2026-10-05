@@ -1,0 +1,147 @@
+Prior-Work Analysis Report: Ecological Occupancy Modeling for Large Language Model Unlearning Audits
+Verdict
+NOT FOUND
+A comprehensive prior-work audit across arXiv, OpenReview (ICLR, ICML, NeurIPS, TMLR), ACL Anthology (ACL, EMNLP, NAACL, EACL), Semantic Scholar, Google Scholar, LessWrong/Alignment Forum, and primary ecology/statistics journals (Methods in Ecology and Evolution, Ecology, Biometrics, JASA, Annals of Applied Statistics) confirms that no published or preprinted work applies ecological site-occupancy models (such as MacKenzie et al., 2002, or Royle & Nichols, 2003) or zero-inflated latent-presence models to large language model (LLM) unlearning, knowledge probing, or knowledge editing1.
+While existing unlearning research explores probabilistic output distribution bounds (Scholten et al., 2025)3, empirical sampling leak metrics (Reisizadeh et al., 2025)6, dynamic multi-prompt adversarial search (Rybak et al., 2026; Tran To et al., 2025)7, internal representation information decomposition (Goel et al., 2026)4, and species-richness extrapolation (Li et al., 2025; Liu et al., 2026)5, no existing methodology formulates an unlearning forget set as a population of latent sites  with occupancy probabilities , while modeling diverse probe modalities (such as paraphrases, translations, cloze prompts, few-shot queries, temperature sampling, adversarial prefixes, and short relearning nudges) as repeated diagnostic visits  with probe-specific detection probabilities 1.
+Literature Analysis Across Research Axes
+Probabilistic Evaluation Frameworks and Sampling Bounds
+Traditional evaluations of unlearning rely on deterministic point estimates generated via greedy decoding (), treating a fact as removed if a single prompt fails to elicit the target response3. Scholten et al. (2025) address the fragility of point-estimate evaluations by introducing a probabilistic evaluation framework for LLM unlearning and alignment3. Utilizing Monte Carlo sampling under multinomial decoding, Scholten et al. derive non-parametric Clopper-Pearson concentration bounds to establish upper bounds on binary leakage () and general expected leakage ()3. However, this approach evaluates the generation variance of a model's output distribution for individual prompts rather than decoupling latent fact retention () from variable probe detection probabilities () across distinct prompt structures or attack modalities3.
+Expanding on sampling-based evaluation, Reisizadeh et al. (2025) introduce the leak@k metric, which measures the probability that at least one response out of  stochastic decoding samples leaks unlearned information6. Their empirical findings demonstrate that standard unlearning algorithms frequently suppress top-token generation while leaving target facts accessible in the sampling distribution tail6. Despite exposing surface-level unlearning flaws, leak@k functions strictly as an empirical attack success metric under repeated stochastic sampling6. It does not establish a parametric latent-variable model, nor does it separate false negatives caused by weak probes from genuine knowledge erasure6.
+Adversarial Multi-Probe Stress-Testing and Knowledge Recovery
+A major focus within unlearning evaluation centers on dynamic probe generation to test whether suppressed knowledge can be recovered under targeted adversarial pressure7. Rybak et al. (2026) propose REBEL, an evolutionary evaluation loop that pairs a hacker model with a judge model to iteratively mutate benign queries into role-play and hypothetical prompts, recovering up to 93% of unlearned biosecurity knowledge7. Similarly, Tran To et al. (2025) present LURK, which adapts Greedy Coordinate Gradient (GCG) search to optimize token suffixes that induce unlearned models to complete canonical domain facts8.
+Both REBEL and LURK illustrate that single-probe evaluations yield high false-negative rates regarding knowledge removal7. However, these frameworks operate as heuristic stress-testing optimization algorithms designed to establish empirical lower bounds on attack success rates7. They do not provide statistical estimators, dataset-level confidence intervals for unobserved residual knowledge prevalence, or sample-size power analyses to determine auditing completeness7.
+Internal Activation Decomposition and Representation Probing
+Moving beyond output text generation, recent research investigates internal hidden layer representations to assess post-unlearning residual traces4. Goel et al. (2026) propose an auditing framework grounded in Partial Information Decomposition (PID), dissecting the joint mutual information between pre-unlearning base models and post-unlearning target models into uniquely erased information () and redundant residual knowledge ()4.
+While Goel et al. successfully isolate internal memory traces from surface-level output suppression, their framework relies on full white-box access to model activations and linear probe classifiers4. In contrast, an ecological occupancy framework models behavioral detection dynamics directly from input-output observations, parameterizing probe-level non-detection probabilities () and fact-level latent presence () without requiring model parameter or activation access2.
+Species-Richness and Capture-Recapture Frameworks in LLM Evaluation
+The application of statistical ecology principles to language models has gained momentum through species-richness estimation and capture-recapture theory5. Li et al. (2025) introduce KnowSum, adapting Good-Turing and Orlitsky-style unseen-species estimators to extrapolate the total volume of unobserved knowledge (e.g., mathematical theorems) known by an LLM beyond a test set5. Liu et al. (2026) employ a Bayesian capture-recapture ecology framework to estimate the diversity and population size of an LLM's generative idea space for novelty assessment9. Additionally, Xin et al. (2026) develop UCS, which applies Smoothed Good-Turing estimation over discretized latent code clusters to optimize demonstration coverage in in-context learning15.
+These works adapt species-richness estimation—extrapolating the total count of unobserved unique items in an open population based on sample occurrence frequencies5. The proposed research idea instead adapts site-occupancy modeling (MacKenzie et al., 2002), which operates on a closed set of specific unlearning targets ("sites") and models latent binary presence () vs. non-detection () across repeated heterogeneous diagnostic attempts ("visits")1.
+Ecological Occupancy Models in Machine Learning Literature
+An examination of machine learning literature referencing occupancy models reveals that ecological occupancy frameworks are utilized strictly as downstream statistical targets for environmental monitoring or building systems engineering2. Machine learning classifiers (such as Convolutional Neural Networks or bioacoustic classifiers) are paired with false-positive or continuous-score occupancy models to correct classifier errors when estimating biological species distributions2. Other applications include BuildOcc, a platform simulating human building occupant agents18, and InFOM, a reinforcement learning method modeling long-horizon state occupancy trajectories21. No prior research utilizes ecological site-occupancy models as a meta-evaluation methodology to assess machine learning model capabilities, unlearning efficacy, or knowledge probing robustness1.
+Comparative Prior Work Summary
+
+Title
+First Author
+Year
+Venue
+Link
+What It Does
+Difference
+A Probabilistic Perspective on Unlearning and Alignment for Large Language Models
+Yan Scholten
+2025
+ICLR 2025
+arXiv:2410.03523
+[cite: 3]
+Evaluates LLM unlearning output distributions under probabilistic decoding using Monte Carlo sampling and Clopper-Pearson bounds to establish confidence intervals on information leakage3.
+It quantifies output sampling variability for individual prompts rather than decoupling fact-level latent presence from probe-specific detection probabilities across heterogeneous prompt types3.
+Leak@k: Unlearning Does Not Make LLMs Forget Under Probabilistic Decoding
+Hadi Reisizadeh
+2025
+arXiv preprint
+arXiv:2511.04934
+[cite: 6]
+Introduces the leak@k metric to measure the probability that at least one response out of k stochastic decoding samples leaks unlearned information6.
+It computes an empirical attack success rate under repeated stochastic sampling without fitting a latent-variable statistical model to separate probe detection errors from true knowledge erasure6.
+REBEL: Hidden Knowledge Recovery via Evolutionary-Based Evaluation Loop
+Patryk Rybak
+2026
+arXiv preprint
+arXiv:2602.06248
+[cite: 7]
+Employs an evolutionary loop pairing a hacker LLM with a judge LLM to dynamically mutate benign queries into role-play prompts that recover unlearned knowledge7.
+It serves as an optimization-driven adversarial attack tool reporting empirical recovery rates rather than a parametric statistical estimator quantifying residual dataset-level prevalence with confidence intervals7.
+Harry Potter is Still Here! Probing Knowledge Leakage in Targeted Unlearned LLMs via Automated Adversarial Prompting
+Bang Trinh Tran To
+2025
+EMNLP 2025 Findings
+arXiv:2505.17160
+[cite: 8, 22]
+Develops an automated suffix optimization framework based on Greedy Coordinate Gradient search to elicit unlearned canonical facts from target domains8.
+It focuses on generating adversarial suffix prompts to expose latent responses rather than modeling site-occupancy detection parameters to estimate overall unlearned dataset retention8.
+Auditing Language Model Unlearning via Information Decomposition
+Anmol Goel
+2026
+arXiv preprint
+arXiv:2601.15111
+[cite: 23]
+Applies Partial Information Decomposition to intermediate layer representations to separate uniquely erased information from redundant residual knowledge shared with the base model4.
+It measures mutual information within internal hidden layer activation vectors rather than modeling behavioral probe non-detection probabilities across surface-level diagnostic visits4.
+Evaluating the Unseen Capabilities: How Many Theorems Do LLMs Know?
+Xiang Li
+2025
+arXiv preprint
+arXiv:2506.02058
+[cite: 5]
+Adapts species-richness estimation theory from statistics and ecology to extrapolate the total number of unobserved theorems or facts known by an LLM based on sample generation frequencies5.
+It extrapolates open-population capability totals from observed occurrence frequencies rather than modeling closed-set site occupancy and detection probabilities for a fixed forget set across distinct probe modalities5.
+Counting Species of Ideas: A Bayesian Capture–Recapture Ecology Framework for Estimating LLM Novelty
+Shujie Liu
+2026
+HICSS 2026
+DOI:10.24251/HICSS.2026.017
+[cite: 9]
+Utilizes a Bayesian capture-recapture ecological framework to estimate the total size and coverage of an LLM's generative idea space for novelty assessment9.
+It applies capture-recapture to estimate generative diversity and creative output spaces rather than auditing post-unlearning latent knowledge presence or probe detection rates9.
+UCS: Estimating Unseen Coverage for Improved In-Context Learning
+Jiayi Xin
+2026
+ACL 2026 Findings
+arXiv:2604.12015
+[cite: 15, 16]
+Uses Smoothed Good-Turing unseen estimation over discretized latent code clusters to optimize demonstration set retrieval for in-context learning15.
+It regularizes demonstration retrieval using unseen coverage functionals rather than auditing unlearning efficacy or parameterizing imperfect probe detection probabilities15.
+Strongest Reviewer Objections and Methodological Counter-Evidence
+A critical review of the proposed framework highlights a primary theoretical objection concerning model misspecification and statistical assumptions. Standard ecological site-occupancy models assume that site occupancy () represents a static binary latent state—where a species is strictly present or absent—and that repeated detection visits () possess conditionally independent observation errors1. In neural language models, knowledge removal post-unlearning rarely manifests as discrete binary deletion4. Fine-tuning modifications degrade weight associations along a continuous spectrum of association strengths4. Furthermore, diagnostic probes (such as paraphrases, translations, cloze formats, and short relearning nudges) share underlying semantic embeddings and attention routing pathways, inherently violating the assumption of visit independence4. Reviewers will argue that fitting a binary occupancy model to continuous, correlated knowledge degradation will yield misspecified parameter estimates and overly optimistic confidence intervals.
+Addressing this objection requires establishing three empirical and theoretical validations within the proposed evaluation framework:
+First, the estimator must undergo ground-truth calibration against a model retrained strictly from scratch on retain data (), where the target facts () were never observed4. Demonstrating that the occupancy estimator converges to  (with confidence intervals spanning zero) on the retrained reference model proves that baseline generation noise, partial prompt overlap, or commonsense guessing do not cause false-positive occupancy inflation4.
+Second, the statistical model must parameterize probe detection probabilities  using a logit link function that explicitly incorporates probe-level covariates () and fact-level random effects ():
+
+Here,  accounts for embedding distances, prompt token length, and decoding temperatures2. Conducting Mackenzie-Bailey bootstrap goodness-of-fit tests will verify whether covariate conditioning successfully accounts for overdispersion and inter-probe dependency2.
+Third, estimated occupancy parameters () must be validated against physical relearning resistance4. By subjecting unlearned models to fine-tuning recovery attacks and recording the exact number of gradient steps  required to restore complete recall for each fact , the framework can demonstrate a strong monotonic correlation between estimated latent occupancy  and relearning vulnerability4. Showing that facts with high  that passed surface-level greedy probes require significantly fewer gradient steps to recover than facts with  confirms that the estimated site occupancy reflects true physical retention rather than a mathematical artifact4.
+Executed Search Queries
+	•	"occupancy model" AND ("unlearning" OR "probing" OR "knowledge editing" OR "language model") [cite: 1, 25]
+	•	"imperfect detection" AND ("unlearning" OR "knowledge probing" OR "LLM") [cite: 1]
+	•	"capture-recapture" AND ("unlearning" OR "knowledge probing" OR "LLM") [cite: 14, 26, 27]
+	•	"zero-inflated" AND ("unlearning" OR "knowledge probing" OR "residual knowledge")
+	•	"site occupancy" AND ("machine learning" OR "language model") [cite: 1, 2]
+	•	"unseen species" AND ("unlearning" OR "knowledge probing" OR "theorems" OR "KnowSum") [cite: 16, 17, 28]
+	•	"2410.03523" OR "A Probabilistic Perspective on Unlearning and Alignment" [cite: 3, 29]
+	•	"2511.04934" OR "Leak@k" [cite: 6, 29]
+	•	"2602.06248" OR "REBEL" unlearning [cite: 7, 29]
+	•	"2505.17160" OR "LURK" "Harry Potter" [cite: 8, 29, 30]
+	•	"2601.15111" OR "Auditing Language Model Unlearning via Information Decomposition" [cite: 23]
+	•	"2506.02058" OR "KnowSum" [cite: 5, 28]
+	•	"sample size" OR "power analysis" AND ("unlearning audit" OR "probing robustness")
+	•	"false negatives" AND "knowledge probing" AND "confidence interval"
+Works cited
+	•	Chapter 5 Modeling Occupancy | Best Practices for Using eBird Data, https://cornelllabofornithology.github.io/ebird-best-practices/occupancy.html
+	•	A classification‐occupancy model based on automatically identified, https://pmc.ncbi.nlm.nih.gov/articles/PMC12056683/
+	•	A Probabilistic Perspective on Unlearning and Alignment for Large, https://arxiv.org/abs/2410.03523
+	•	Auditing Language Model Unlearning via Information Decomposition, https://arxiv.org/pdf/2601.15111
+	•	Evaluating the Unseen Capabilities: How Many Theorems Do LLMs, https://arxiv.org/abs/2506.02058
+	•	Unlearning Does Not Make LLMs Forget Under Probabilistic Decoding, https://arxiv.org/abs/2511.04934
+	•	Hidden Knowledge Recovery via Evolutionary-Based Evaluation Loop, https://arxiv.org/abs/2602.06248
+	•	Harry Potter is Still Here! Probing Knowledge Leakage in Targeted, https://arxiv.org/abs/2505.17160
+	•	Counting Species of Ideas: A Bayesian Capture–Recapture Ecology, https://scholarspace.manoa.hawaii.edu/items/1f1d5457-4e08-46d6-a6ef-92437e2e103e
+	•	[Literature Review] A Probabilistic Perspective on Unlearning and, https://www.themoonlight.io/en/review/a-probabilistic-perspective-on-unlearning-and-alignment-for-large-language-models
+	•	Evolutionary Hidden Knowledge Recovery | LLM Security Database, https://www.promptfoo.dev/lm-security-db/vuln/evolutionary-hidden-knowledge-recovery-a23bd199/
+	•	Auditing Language Model Unlearning via Information Decomposition, https://arxiv.org/html/2601.15111v1
+	•	Weijie Su | alphaXiv, https://www.alphaxiv.org/@weijie-su-2
+	•	Counting Species of Ideas: A Bayesian Capture-Recapture Ecology, https://www.semanticscholar.org/paper/Counting-Species-of-Ideas%3A-A-Bayesian-Ecology-for-Liu-Lee/a3877f3b7dc6de0ae1b86b8ee83ef636816544cb
+	•	UCS: Estimating Unseen Coverage for Improved In-Context Learning, https://arxiv.org/pdf/2604.12015
+	•	UCS: Estimating Unseen Coverage for Improved In-Context Learning, https://aclanthology.org/2026.findings-acl.533.pdf
+	•	Unseen species problem - Wikipedia, https://en.wikipedia.org/wiki/Unseen_species_problem
+	•	BuildOcc: A Large Language Model Occupant Agent Platform ... - arXiv, https://arxiv.org/html/2609.02729v1
+	•	Using informative priors to account for identifiability issues in, https://peercommunityjournal.org/item/10_24072_pcjournal_511/
+	•	A comparison of statistical methods for deriving occupancy, https://pubmed.ncbi.nlm.nih.gov/40289178/
+	•	Intention-Conditioned Flow Occupancy Models - arXiv, https://arxiv.org/html/2506.08902v3
+	•	Harry Potter is Still Here! Probing Knowledge Leakage in Targeted, https://aclanthology.org/2025.findings-emnlp.778/
+	•	Auditing Language Model Unlearning via Information Decomposition, https://arxiv.org/abs/2601.15111
+	•	Alternate Preference Optimization for Unlearning Factual, https://aclanthology.org/2025.coling-main.252.pdf
+	•	Transferable Reinforcement Learning via Generalized Occupancy, https://arxiv.org/html/2403.06328v2
+	•	Capture Recapture - GCSE Maths - Steps, Examples & Worksheet, https://thirdspacelearning.com/gcse-maths/statistics/capture-recapture/
+	•	Parameterization Of Continuous Covariates In The Poisson Capture, https://ideas.repec.org/a/bot/rivsta/v79y2019i4p427-443.html
+	•	[PDF] Optimal Prediction of the Number of Unseen Species with, https://www.semanticscholar.org/paper/Optimal-Prediction-of-the-Number-of-Unseen-Species-Hao-Li/7939d9eb918e5138a5c10bb76f42ae82e1a8ec76
+	•	Yan Scholten - - Konrad Zuse School of Excellence in Reliable AI, https://zuseschoolrelai.de/people/scientists/yan-scholten/
+	•	Harry Potter is Still Here! Probing Knowledge Leakage in Targeted, https://arxiv.org/pdf/2505.17160
