@@ -7,7 +7,7 @@ on Crossref. PDFs are not redistributed (licences); follow the links. Novelty-ch
 
 | Paper | PDF | What it does | Difference from us |
 |---|---|---|---|
-| Deeb & Roger, "Do Unlearning Methods Remove Information from Language Model Weights?" (2024) [2410.08827](https://arxiv.org/abs/2410.08827) | yes | Fine-tune on some forgotten facts, test recovery of the others; ~88% of pre-unlearning accuracy recovered. Asks "removed or hidden?" directly | An attack needing fine-tuning access; no estimate of the share still stored, no presence/detection split. **We use it as ground truth.** Not found by the three novelty checks; found while designing the experiment |
+| Deeb & Roger, "Do Unlearning Methods Remove Information from Language Model Weights?" (2024) [2410.08827](https://arxiv.org/abs/2410.08827). **Status:** arXiv preprint only; submitted to ICLR 2025 and rejected (OpenReview `uDjuCpQH5N`). **78 citations** on Google Scholar (checked 2026-10-05) | yes | Fine-tune on some forgotten facts, test recovery of the others; ~88% of pre-unlearning accuracy recovered. Asks "removed or hidden?" directly | An attack needing fine-tuning access; no estimate of the share still stored, no presence/detection split. **We use it as ground truth.** Not found by the three novelty checks; found while designing the experiment |
 | Scholten et al., "A Probabilistic Perspective on Unlearning and Alignment for LLMs" (ICLR 2025) [2410.03523](https://arxiv.org/abs/2410.03523) | yes | Greedy evaluation overstates unlearning; bounds on leakage from the sampled output distribution of a prompt | Sampling randomness for one prompt; no heterogeneous probes, no ψ vs p |
 | Reisizadeh et al., "Leak@k" (2025) [2511.04934](https://arxiv.org/abs/2511.04934) | yes | Probability that at least one of k samples leaks | Empirical leak metric; no latent-variable model |
 | Rybak et al., "REBEL" (2026) [2602.06248](https://arxiv.org/abs/2602.06248) | yes | Evolutionary prompt search recovers "forgotten" knowledge | Attack success rate, no estimator |
@@ -35,7 +35,7 @@ Journal PDFs are not stored (publisher copyright); open via DOI.
 | Dorna et al., "OpenUnlearning" (2025) [2506.12618](https://arxiv.org/abs/2506.12618) | yes | Public checkpoints we audit |
 | Zhang et al., "Negative Preference Optimization" (2024) [2404.05868](https://arxiv.org/abs/2404.05868) | yes | NPO method |
 | Li et al., "The WMDP Benchmark" (2024) [2403.03218](https://arxiv.org/abs/2403.03218) | yes | RMU method |
-| Shi et al., "MUSE" (2024) [2407.06460](https://arxiv.org/abs/2407.06460) | yes | Real-entity unlearning benchmark (not used in v1) |
+| Shi et al., "MUSE" (ICLR 2025) [2407.06460](https://arxiv.org/abs/2407.06460), 361 citations on Google Scholar (2026-10-05) | yes | Real-entity unlearning benchmark (not used in v1) |
 
 ## Related ecology-in-LLM work (not unlearning)
 
