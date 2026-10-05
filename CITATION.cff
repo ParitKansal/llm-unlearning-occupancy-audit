@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you build on this idea or these results, please cite it as below."
-title: "Is It Really Forgotten? Occupancy Models for Auditing LLM Unlearning (a pre-registered negative result)"
+title: "Is It Really Forgotten? Occupancy Models for Auditing Unlearning in Large Language Models"
 type: software
 authors:
   - family-names: Kansal
