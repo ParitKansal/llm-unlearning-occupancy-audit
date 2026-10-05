@@ -123,21 +123,28 @@ To reproduce the results, open the four `*_worker_*` notebooks in [`experiments/
 
 ## 8. Related work
 
-Deeb and Roger (2024), [*Do Unlearning Methods Remove Information from Language Model Weights?*](https://arxiv.org/abs/2410.08827), introduced the retraining test used here as ground truth and showed that unlearned knowledge is often recoverable. Scholten et al. (ICLR 2025), [*A Probabilistic Perspective on Unlearning and Alignment for Large Language Models*](https://arxiv.org/abs/2410.03523), showed that evaluating a single greedy answer overstates forgetting. Reisizadeh et al. (2025), [*Leak@k: Unlearning Does Not Make LLMs Forget Under Probabilistic Decoding*](https://arxiv.org/abs/2511.04934), showed that repeated sampling resurfaces forgotten facts. The ecological method originates with MacKenzie et al. (2002), [*Estimating Site Occupancy Rates When Detection Probabilities Are Less Than One*](https://doi.org/10.1890/0012-9658(2002)083[2248:ESORWD]2.0.CO;2). An annotated bibliography is provided in [`literature/README.md`](literature/README.md). As of October 2026, we found no earlier application of occupancy models to the evaluation of unlearning.
+**Evaluating whether unlearning works.** Most unlearning methods, including the gradient-difference baseline on TOFU [10], NPO [14] and RMU [5], are evaluated by querying each forgotten fact once. A growing body of work shows that such evaluations overstate forgetting. Lynch et al. [8] proposed a battery of robustness tests, including rephrased and adversarial prompts and relearning. Scholten et al. [13] showed that a single greedy answer hides leakage that becomes visible when the model's answers are sampled, and Reisizadeh et al. [11] showed that repeated sampling resurfaces forgotten facts. Hu et al. [4] and Deeb and Roger [1] showed that brief fine-tuning recovers much of the supposedly removed knowledge, the latter using held-out facts so that recovery cannot be explained by re-teaching; their procedure provides the ground truth in this study. Together, these studies establish that unlearned knowledge is often hidden rather than removed, but each reports how often a particular test detects or recovers it. None combines several imperfect tests into an estimate of how much knowledge remains, with a measure of uncertainty, which is the gap this work addresses.
+
+**Statistical ecology in machine-learning evaluation.** Estimating quantities that cannot be observed directly is a classic problem in ecology. Li et al. [6] adapted unseen-species estimators to ask how much knowledge a language model holds beyond what a test set reveals. Occupancy models [9] answer a different question: whether each site in a fixed set is occupied, given repeated surveys that can miss. Later extensions handle false detections [12], which correspond to lucky guesses in this setting, and it is known that population size cannot be identified when detection probabilities vary without restriction [7], which mirrors the identifiability condition encountered here. As of October 2026, we found no earlier application of occupancy models to the evaluation of unlearning or of knowledge in language models.
+
+An annotated bibliography, describing how each paper differs from this work, is provided in [`literature/README.md`](literature/README.md).
 
 ## References
 
 1. Deeb, A., & Roger, F. (2024). Do Unlearning Methods Remove Information from Language Model Weights? *arXiv:2410.08827*. https://arxiv.org/abs/2410.08827
 2. Dorna, V., Mekala, A., Zhao, W., McCallum, A., Lipton, Z. C., Kolter, J. Z., & Maini, P. (2025). OpenUnlearning: Accelerating LLM Unlearning via Unified Benchmarking of Methods and Metrics. *arXiv:2506.12618*. https://arxiv.org/abs/2506.12618
 3. Grattafiori, A., et al. (2024). The Llama 3 Herd of Models. *arXiv:2407.21783*. https://arxiv.org/abs/2407.21783
-4. Li, N., et al. (2024). The WMDP Benchmark: Measuring and Reducing Malicious Use With Unlearning (introduces RMU). *arXiv:2403.03218*. https://arxiv.org/abs/2403.03218
-5. Link, W. A. (2003). Nonidentifiability of Population Size from Capture–Recapture Data with Heterogeneous Detection Probabilities. *Biometrics*, 59(4), 1123–1130. https://doi.org/10.1111/j.0006-341x.2003.00129.x
-6. MacKenzie, D. I., Nichols, J. D., Lachman, G. B., Droege, S., Royle, J. A., & Langtimm, C. A. (2002). Estimating Site Occupancy Rates When Detection Probabilities Are Less Than One. *Ecology*, 83(8), 2248–2255. https://doi.org/10.1890/0012-9658(2002)083[2248:ESORWD]2.0.CO;2
-7. Maini, P., Feng, Z., Schwarzschild, A., Lipton, Z. C., & Kolter, J. Z. (2024). TOFU: A Task of Fictitious Unlearning for LLMs (introduces the benchmark and the GradDiff baseline setting). *arXiv:2401.06121*. https://arxiv.org/abs/2401.06121
-8. Reisizadeh, H., Ruan, J., Chen, Y., Pal, S., Liu, S., & Hong, M. (2025). Leak@k: Unlearning Does Not Make LLMs Forget Under Probabilistic Decoding. *arXiv:2511.04934*. https://arxiv.org/abs/2511.04934
-9. Royle, J. A., & Link, W. A. (2006). Generalized Site Occupancy Models Allowing for False Positive and False Negative Errors. *Ecology*, 87(4), 835–841. https://doi.org/10.1890/0012-9658(2006)87[835:GSOMAF]2.0.CO;2
-10. Scholten, Y., Günnemann, S., & Schwinn, L. (2025). A Probabilistic Perspective on Unlearning and Alignment for Large Language Models. *International Conference on Learning Representations (ICLR)*. https://arxiv.org/abs/2410.03523
-11. Zhang, R., Lin, L., Bai, Y., & Mei, S. (2024). Negative Preference Optimization: From Catastrophic Collapse to Effective Unlearning. *arXiv:2404.05868*. https://arxiv.org/abs/2404.05868
+4. Hu, S., Fu, Y., Wu, Z. S., & Smith, V. (2024). Unlearning or Obfuscating? Jogging the Memory of Unlearned LLMs via Benign Relearning. *arXiv:2406.13356*. https://arxiv.org/abs/2406.13356
+5. Li, N., et al. (2024). The WMDP Benchmark: Measuring and Reducing Malicious Use With Unlearning. *arXiv:2403.03218*. https://arxiv.org/abs/2403.03218
+6. Li, X., Xin, J., Long, Q., & Su, W. J. (2025). Evaluating the Unseen Capabilities: How Many Theorems Do LLMs Know? *arXiv:2506.02058*. https://arxiv.org/abs/2506.02058
+7. Link, W. A. (2003). Nonidentifiability of Population Size from Capture–Recapture Data with Heterogeneous Detection Probabilities. *Biometrics*, 59(4), 1123–1130. https://doi.org/10.1111/j.0006-341x.2003.00129.x
+8. Lynch, A., Guo, P., Ewart, A., Casper, S., & Hadfield-Menell, D. (2024). Eight Methods to Evaluate Robust Unlearning in LLMs. *arXiv:2402.16835*. https://arxiv.org/abs/2402.16835
+9. MacKenzie, D. I., Nichols, J. D., Lachman, G. B., Droege, S., Royle, J. A., & Langtimm, C. A. (2002). Estimating Site Occupancy Rates When Detection Probabilities Are Less Than One. *Ecology*, 83(8), 2248–2255. https://doi.org/10.1890/0012-9658(2002)083[2248:ESORWD]2.0.CO;2
+10. Maini, P., Feng, Z., Schwarzschild, A., Lipton, Z. C., & Kolter, J. Z. (2024). TOFU: A Task of Fictitious Unlearning for LLMs. *arXiv:2401.06121*. https://arxiv.org/abs/2401.06121
+11. Reisizadeh, H., Ruan, J., Chen, Y., Pal, S., Liu, S., & Hong, M. (2025). Leak@k: Unlearning Does Not Make LLMs Forget Under Probabilistic Decoding. *arXiv:2511.04934*. https://arxiv.org/abs/2511.04934
+12. Royle, J. A., & Link, W. A. (2006). Generalized Site Occupancy Models Allowing for False Positive and False Negative Errors. *Ecology*, 87(4), 835–841. https://doi.org/10.1890/0012-9658(2006)87[835:GSOMAF]2.0.CO;2
+13. Scholten, Y., Günnemann, S., & Schwinn, L. (2025). A Probabilistic Perspective on Unlearning and Alignment for Large Language Models. *International Conference on Learning Representations (ICLR)*. https://arxiv.org/abs/2410.03523
+14. Zhang, R., Lin, L., Bai, Y., & Mei, S. (2024). Negative Preference Optimization: From Catastrophic Collapse to Effective Unlearning. *arXiv:2404.05868*. https://arxiv.org/abs/2404.05868
 
 ---
 
@@ -160,7 +167,7 @@ The **Cite this repository** button on the right of this page provides the same 
 
 ## Acknowledgements
 
-This work uses the TOFU benchmark [7], the public unlearning checkpoints released by the OpenUnlearning project [2], and Llama-3.2-1B-Instruct from the Llama 3 model family [3], used under the Llama 3.2 Community License. Literature searches and code were developed with the assistance of an AI system (Claude); all experiments were run and all results verified by the author.
+This work uses the TOFU benchmark [10], the public unlearning checkpoints released by the OpenUnlearning project [2], and Llama-3.2-1B-Instruct from the Llama 3 model family [3], used under the Llama 3.2 Community License. Literature searches and code were developed with the assistance of an AI system (Claude); all experiments were run and all results verified by the author.
 
 ## License
 
