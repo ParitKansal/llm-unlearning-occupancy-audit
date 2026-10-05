@@ -163,23 +163,31 @@ print('PRECONDITION full-model direct detection >= 0.50:', round(full_direct, 3)
 
 md("## 6. Fit occupancy models (primary Mh; M0 and Mh2 as sensitivity), bootstrap CIs, goodness of fit")
 code("""
-import occ
+import occ, time
 FIT = {}
-for name, Y in DET.items():
+names = list(DET)
+T0 = time.time()
+for i, (name, Y) in enumerate(DET.items(), 1):
     path = f'{OUT}/fit_{name}.json'
     if os.path.exists(path):
-        FIT[name] = json.load(open(path)); print('loaded', name); continue
+        FIT[name] = json.load(open(path)); print(f'[{i}/{len(names)}] {name}: loaded from Drive', flush=True); continue
+    print(f'[{i}/{len(names)}] {name}: start', flush=True)
     res = {}
     for m in occ.MODELS:
+        B = 300 if m == 'Mh' else 100
+        t = time.time(); print(f'    {m}: fit + {B} bootstrap fits ...', end=' ', flush=True)
         r = occ.fit(Y, f, m)
-        lo, hi, _ = occ.bootstrap_ci(Y, f, m, B=300 if m == 'Mh' else 100, n_jobs=-1)
+        lo, hi, _ = occ.bootstrap_ci(Y, f, m, B=B, n_jobs=-1)
         res[m] = {'psi': r['psi'], 'lo': lo, 'hi': hi, 'aic': r['aic'], 'p': r['p'].tolist(), 'extra': r['extra'].tolist()}
+        print(f'psi {r["psi"]:.3f} [{lo:.3f}, {hi:.3f}]  ({time.time()-t:.0f}s)', flush=True)
+    t = time.time(); print('    goodness of fit (100 fits) ...', end=' ', flush=True)
     res['gof_p_Mh'] = occ.gof_count_test(Y, occ.fit(Y, f, 'Mh'), f, B=100, n_jobs=-1)
+    print(f'p = {res["gof_p_Mh"]:.3f}  ({time.time()-t:.0f}s)', flush=True)
     res['naive'] = occ.naive_estimates(Y)
     FIT[name] = res; P.save_json(res, path)
-    print(name, {m: (round(res[m]['psi'], 3), round(res[m]['lo'], 3), round(res[m]['hi'], 3)) for m in occ.MODELS},
-          'GOF p', round(res['gof_p_Mh'], 3), res['naive'])
+    print(f'[{i}/{len(names)}] {name}: done, naive {res["naive"]}  | total elapsed {(time.time()-T0)/60:.1f} min', flush=True)
 """)
+
 
 md("""
 ## 7. Ground truth from relearning
