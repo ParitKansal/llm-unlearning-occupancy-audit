@@ -21,6 +21,8 @@ Status: **kill experiment ready, not run.**
 Edit `occ.py` / `probes.py`, then `python make_notebook.py` to rebuild the notebook. `python test_occ.py` checks the
 estimator on simulated data (CPU).
 
+Last result (2026-10-05, after the detectability fix): true ψ = 0.45 → ψ̂ = 0.451 (sd 0.030), 95% CI coverage 0.95 over 20 runs; single-probe 0.067, any-of-K 0.522; null control (ψ = 0, f = 5%) ψ̂ ≤ 0.043 in 20/20. The full pipeline also passed a CPU smoke test with a tiny random Llama.
+
 ## Novelty status (2026-10-05)
 NOT FOUND in three checks (arXiv + OpenReview; Semantic Scholar + web; Gemini Deep Research). Closest:
 Deeb & Roger 2024 (relearning attack to test removal, our ground truth), Scholten et al. ICLR 2025, Leak@k.
