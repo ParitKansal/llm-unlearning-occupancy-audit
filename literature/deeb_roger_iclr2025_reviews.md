@@ -33,7 +33,7 @@ recovered the most hidden knowledge.
 1. **Do not pitch "unlearning hides knowledge".** That is known (Lynch, Hu, WMDP, Deeb & Roger). The new part is an *estimator*: how much is still stored, with a CI, from black-box probes, plus how many probes an audit needs.
 2. **Compare against existing metrics in experiments** (YJoy's main complaint): single probe, any-of-K, leak@k-style sampling, MCQ, relearning recovery. The kill gate requires beating the first two; a full study would add the rest.
 3. **Bring theory** (YJoy's alternative path): identifiability (the detectability condition we found in simulation), bias of single-probe and any-of-K estimators, probes-needed bound.
-4. **Have a baseline for relearning** (the AC's point): our retain-only model under the same relearning is exactly that baseline.
+4. **Have a baseline for relearning** (the AC's point): our retain-only model under the same relearning is exactly that baseline. 
 5. **Relearning is a lower bound on what is stored** (STkt): treat ψ\* as a lower bound and say so; use the strongest relearning we can.
 6. **Breadth** (YJoy, wshX): a full study needs ≥ 5 unlearning methods, 2 model sizes, TOFU + WMDP + MUSE, open-ended and MCQ formats.
 7. **Ablate the relearning set** (qho8): size of T and an unrelated-data fine-tune.

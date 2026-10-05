@@ -1,4 +1,4 @@
-"""Build kill_experiment.ipynb (self-contained: embeds occ.py and probes.py). Run: python make_notebook.py"""
+"""Build the Colab notebooks in ../notebooks (self-contained: they embed occ.py and probes.py). Run: python make_notebook.py"""
 import json
 from pathlib import Path
 
@@ -258,7 +258,7 @@ def save(name, cs, gpu=True):
     for c in nb["cells"]:
         t = src(c)
         c["source"] = [l + "\n" for l in t.split("\n")[:-1]] + [t.split("\n")[-1]]
-    (HERE / name).write_text(json.dumps(nb, indent=1))
+    (HERE.parent / "notebooks" / name).write_text(json.dumps(nb, indent=1))
     print("wrote", name, "with", len(cs), "cells")
 
 

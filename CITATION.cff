@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you build on this idea or these results, please cite it as below."
+title: "Is It Really Forgotten? Occupancy Models for Auditing LLM Unlearning (a pre-registered negative result)"
+type: software
+authors:
+  - family-names: Kansal
+    given-names: Parit
+    website: "https://paritkansal.in"
+repository-code: "https://github.com/ParitKansal/llm-unlearning-occupancy-audit"
+url: "https://github.com/ParitKansal/llm-unlearning-occupancy-audit"
+date-released: 2026-10-05
+version: "1.0.0"
+license: MIT
+abstract: >-
+  Tests whether ecological occupancy models, which separate presence from imperfect detection, can estimate how much
+  "unlearned" knowledge an LLM still stores, using repeated heterogeneous probes. A pre-registered kill experiment on
+  TOFU with public Llama-3.2-1B unlearning checkpoints (GradDiff, NPO, RMU) found that single-probe metrics undercount
+  stored knowledge by 1.6-3.4x and that the occupancy estimate matched a relearning ground truth for GradDiff and NPO,
+  but failed the never-trained control (clustered false positives on guessable facts) and missed knowledge that RMU
+  hides from all black-box probes. Verdict: NO-GO.
+keywords:
+  - machine unlearning
+  - large language models
+  - unlearning evaluation
+  - occupancy models
+  - imperfect detection
+  - negative result
+  - pre-registration

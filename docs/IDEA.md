@@ -42,10 +42,10 @@ probes are weak, so B may be hidden too; the model estimates how likely. Over th
 - **Control:** a model that never saw the facts must give ψ ≈ 0.
 
 ## Why it seemed worth testing
-New (three independent prior-work checks found nothing), important (unlearning claims back privacy, copyright and
-safety), cheap to test, and memorable:
-*"Ecologists never conclude a species is gone after one empty visit; unlearning papers do."*
+No prior work found (three independent prior-work checks), it matters (unlearning claims back privacy, copyright and
+safety), and it is cheap to test. In one line:
+*"Ecologists never conclude a species is gone after one empty visit; unlearning evaluations do."*
 
 ## Main risks
 Forgetting may be graded rather than yes/no; probes may fail together; relearning is an imperfect ground truth.
-The kill experiment (`02_experiments/01_kill/`) tests these before more compute is spent.
+The kill experiment ([`experiments/kill_v1/`](../experiments/kill_v1/)) tested this; result: [NO-GO](../experiments/kill_v1/RESULTS.md).
