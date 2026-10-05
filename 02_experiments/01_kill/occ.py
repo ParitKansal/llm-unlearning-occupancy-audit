@@ -90,14 +90,20 @@ def fit(Y, f=None, model="Mh", n_starts=6, seed=0, min_excess=MIN_EXCESS):
             "theta": th, "converged": bool(best.success)}
 
 
-def bootstrap_ci(Y, f=None, model="Mh", B=300, alpha=0.05, seed=0):
-    """Nonparametric bootstrap over facts. Returns (lo, hi, draws)."""
+def _boot_one(Y, f, model, idx, b):
+    return fit(Y[idx], f, model, n_starts=2, seed=b)["psi"]
+
+
+def bootstrap_ci(Y, f=None, model="Mh", B=300, alpha=0.05, seed=0, n_jobs=1):
+    """Nonparametric bootstrap over facts. Returns (lo, hi, draws). n_jobs=-1 uses all CPU cores (joblib)."""
     Y = np.asarray(Y, float)
     rng = np.random.default_rng(seed)
-    draws = []
-    for b in range(B):
-        idx = rng.integers(0, len(Y), len(Y))
-        draws.append(fit(Y[idx], f, model, n_starts=2, seed=b)["psi"])
+    idxs = [rng.integers(0, len(Y), len(Y)) for _ in range(B)]
+    if n_jobs == 1:
+        draws = [_boot_one(Y, f, model, idx, b) for b, idx in enumerate(idxs)]
+    else:
+        from joblib import Parallel, delayed
+        draws = Parallel(n_jobs=n_jobs)(delayed(_boot_one)(Y, f, model, idx, b) for b, idx in enumerate(idxs))
     draws = np.array(draws)
     return float(np.quantile(draws, alpha / 2)), float(np.quantile(draws, 1 - alpha / 2)), draws
 
@@ -115,7 +121,15 @@ def simulate(n, psi, a, f=None, sigma=0.0, seed=0):
     return Y.astype(int), z
 
 
-def gof_count_test(Y, fitres, f=None, B=200, seed=0):
+def _gof_one(fitres, n, f, sim_seed, b, K):
+    Yb = _sim_from_fit(fitres, n, f, sim_seed)
+    rb = fit(Yb, f, fitres["model"], n_starts=2, seed=b)
+    exp = np.maximum(np.bincount(_sim_from_fit(rb, n * 20, f, 0).sum(1), minlength=K + 1) / 20.0, 0.5)
+    obs = np.bincount(Yb.sum(1), minlength=K + 1)
+    return float(((obs - exp) ** 2 / exp).sum())
+
+
+def gof_count_test(Y, fitres, f=None, B=200, seed=0, n_jobs=1):
     """Parametric-bootstrap goodness of fit on the distribution of detection counts (0..K).
 
     Statistic: chi-square between observed and expected counts of facts detected by exactly k probes.
@@ -136,11 +150,12 @@ def gof_count_test(Y, fitres, f=None, B=200, seed=0):
     rng = np.random.default_rng(seed)
     exp = expected_counts(fitres)
     t_obs = chi2(Y, exp)
-    t_b = []
-    for b in range(B):
-        Yb = _sim_from_fit(fitres, n, f, int(rng.integers(1 << 30)))
-        rb = fit(Yb, f, fitres["model"], n_starts=2, seed=b)
-        t_b.append(chi2(Yb, expected_counts(rb)))
+    seeds = [int(rng.integers(1 << 30)) for _ in range(B)]
+    if n_jobs == 1:
+        t_b = [_gof_one(fitres, n, f, sd, b, K) for b, sd in enumerate(seeds)]
+    else:
+        from joblib import Parallel, delayed
+        t_b = Parallel(n_jobs=n_jobs)(delayed(_gof_one)(fitres, n, f, sd, b, K) for b, sd in enumerate(seeds))
     return float((np.sum(np.array(t_b) >= t_obs) + 1) / (B + 1))
 
 

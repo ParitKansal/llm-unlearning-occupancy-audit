@@ -23,8 +23,12 @@ separates ψ (fact still stored) from p (probe detects a stored fact), and compa
 
 **Pre-registered go / no-go:** see `PREREG.md` (same thresholds are coded in the last cell).
 
-**Runtime:** Colab A100, about 2 GPU-hours. Every stage saves to Google Drive and is skipped on rerun (resume-safe).
-Uses public OpenUnlearning checkpoints, so no unlearning training is needed.
+**How to run fast (parallel):** open this notebook in 4 Colab A100 sessions. In section 3 set `RUN` differently in each:
+`['full', 'retain']`, `['GradDiff']`, `['NPO']`, `['RMU']`, then Run all. Each session takes ~25–40 min and stops after
+its GPU work. When all 4 are done, open one more fresh session (CPU is enough) with `RUN = []` and Run all: it does
+the analysis and prints the verdict. Single-session alternative: `RUN = list(MODELS)` (~2.5 h, then analysis runs).
+Every stage saves to Google Drive and is skipped on rerun (resume-safe). Public OpenUnlearning checkpoints are used, so
+no unlearning training is needed.
 """)
 
 code("""
@@ -68,6 +72,9 @@ MODELS = {
 }
 UNLEARNED = ['GradDiff', 'NPO', 'RMU']
 
+# >>> set per session: ['full', 'retain'] | ['GradDiff'] | ['NPO'] | ['RMU'] | [] (analysis only) | list(MODELS) (all)
+RUN = ['full', 'retain']
+
 import urllib.request
 def tofu(name):
     url = f'https://huggingface.co/datasets/locuslab/TOFU/resolve/main/{name}.json'
@@ -80,19 +87,59 @@ halves = author % 2                                      # half 0 / half 1, spli
 print(len(facts), 'facts;', len(set(author)), 'authors;', np.bincount(halves))
 """)
 
-md("## 4. Run all 10 probes on the 5 models (~10 min per model; resumes from Drive)")
+md("""
+## 4. GPU work for the models in `RUN`: 10 probes, then relearning (resumes from Drive)
+Relearning (Deeb & Roger 2024 style) for each unlearned model and the retain-only control: fine-tune on the facts of one
+author half (3 epochs, lr 1e-5, loss on question and answer tokens), then run all 10 probes on the *other* half. Raw
+scores are saved; detections are computed in the analysis with the retain-calibrated thresholds.
+""")
 code("""
-SCORES = {}
-for name, mid in MODELS.items():
+for name in RUN:
     path = f'{OUT}/scores_{name}.npz'
     if os.path.exists(path):
-        SCORES[name] = dict(np.load(path)); print('loaded', name); continue
+        print('probes done:', name)
+    else:
+        t = time.time()
+        tok, model = P.load(MODELS[name])
+        s, gens = P.run_probes(tok, model, facts, FEWSHOT)
+        np.savez(path, **s); P.save_json(gens, f'{OUT}/gens_{name}.json')
+        P.free(model); print('probes', name, f'{time.time()-t:.0f}s', {k: round(float(np.mean(v)), 3) for k, v in s.items()})
+    if name == 'full':   # early look at the precondition (formal check, with calibrated thresholds, is in section 5)
+        d = np.load(path)['direct']
+        print(f'EARLY CHECK full model: share of facts with direct-probe score >= 0.5 = {np.mean(d >= 0.5):.3f} '
+              '(should be well above 0.5; if far below, stop and report)')
+    if name not in UNLEARNED + ['retain']:
+        continue
+    rpath = f'{OUT}/relearn_scores_{name}.npz'
+    if os.path.exists(rpath):
+        print('relearning done:', name); continue
     t = time.time()
-    tok, model = P.load(mid)
-    s, gens = P.run_probes(tok, model, facts, FEWSHOT)
-    np.savez(path, **s); P.save_json(gens, f'{OUT}/gens_{name}.json')
-    SCORES[name] = s
-    P.free(model); print(name, f'{time.time()-t:.0f}s', {k: round(float(np.mean(v)), 3) for k, v in s.items()})
+    rs = {k: np.full(len(facts), np.nan) for k in P.PROBES}
+    for h in (0, 1):
+        train = [facts[i] for i in np.where(halves != h)[0]]
+        test_idx = np.where(halves == h)[0]
+        tok, model = P.relearn(MODELS[name], train, epochs=3, lr=1e-5, bs=8, seed=h)
+        s, _ = P.run_probes(tok, model, [facts[i] for i in test_idx], FEWSHOT)
+        for k in P.PROBES:
+            rs[k][test_idx] = s[k]
+        P.free(model)
+    np.savez(rpath, **rs); print('relearning', name, f'{time.time()-t:.0f}s')
+print('GPU work finished for', RUN)
+if RUN and set(RUN) != set(MODELS):      # worker session: make sure files reach Drive before the run stops
+    drive.flush_and_unmount(); print('Drive flushed. This worker is done; the next cell stopping is expected.')
+""")
+
+md("""
+## Analysis (runs only when all GPU work is on Drive)
+In a worker session this cell stops the run with a message; that is expected.
+""")
+code("""
+need = [f'scores_{n}.npz' for n in MODELS] + [f'relearn_scores_{n}.npz' for n in UNLEARNED + ['retain']]
+missing = [x for x in need if not os.path.exists(f'{OUT}/{x}')]
+assert not missing, f'Not ready for analysis (fine in a worker session). Missing on Drive: {missing}'
+SCORES = {n: dict(np.load(f'{OUT}/scores_{n}.npz')) for n in MODELS}
+RSCORES = {n: dict(np.load(f'{OUT}/relearn_scores_{n}.npz')) for n in UNLEARNED + ['retain']}
+print('all inputs present')
 """)
 
 md("""
@@ -125,9 +172,9 @@ for name, Y in DET.items():
     res = {}
     for m in occ.MODELS:
         r = occ.fit(Y, f, m)
-        lo, hi, _ = occ.bootstrap_ci(Y, f, m, B=300 if m == 'Mh' else 100)
+        lo, hi, _ = occ.bootstrap_ci(Y, f, m, B=300 if m == 'Mh' else 100, n_jobs=-1)
         res[m] = {'psi': r['psi'], 'lo': lo, 'hi': hi, 'aic': r['aic'], 'p': r['p'].tolist(), 'extra': r['extra'].tolist()}
-    res['gof_p_Mh'] = occ.gof_count_test(Y, occ.fit(Y, f, 'Mh'), f, B=100)
+    res['gof_p_Mh'] = occ.gof_count_test(Y, occ.fit(Y, f, 'Mh'), f, B=100, n_jobs=-1)
     res['naive'] = occ.naive_estimates(Y)
     FIT[name] = res; P.save_json(res, path)
     print(name, {m: (round(res[m]['psi'], 3), round(res[m]['lo'], 3), round(res[m]['hi'], 3)) for m in occ.MODELS},
@@ -135,32 +182,18 @@ for name, Y in DET.items():
 """)
 
 md("""
-## 7. Ground truth by relearning (Deeb & Roger 2024 style; ~8 short fine-tunes)
-For each unlearned model and the retain-only control: fine-tune on the facts of one author half (3 epochs, lr 1e-5),
-with loss on question and answer tokens, then test the *other* half with all 10 probes. A fact counts as recovered if
-any probe detects it. Ground truth ψ* = recovery(unlearned) − recovery(retain-only after the same relearning), clipped to
-[0, 1]. The subtraction removes facts that relearning could teach from scratch. ψ* is a lower bound on what is stored
-(a failed recovery does not prove removal).
+## 7. Ground truth from relearning
+A fact counts as recovered after relearning if any of the 10 probes detects it (same thresholds as above).
+ψ* = recovery(unlearned) − recovery(retain-only after the same relearning), clipped to [0, 1]. The subtraction removes
+facts that relearning could teach from scratch. ψ* is a lower bound on what is stored (failed recovery ≠ removal).
 """)
 code("""
-REC = {}
-for name in UNLEARNED + ['retain']:
-    path = f'{OUT}/relearn_{name}.json'
-    if os.path.exists(path):
-        REC[name] = json.load(open(path)); print('loaded', name); continue
-    rec = np.zeros(len(facts), int)
-    for h in (0, 1):
-        train = [facts[i] for i in np.where(halves != h)[0]]
-        test_idx = np.where(halves == h)[0]
-        tok, model = P.relearn(MODELS[name], train, epochs=3, lr=1e-5, bs=8, seed=h)
-        s, _ = P.run_probes(tok, model, [facts[i] for i in test_idx], FEWSHOT)
-        d = np.stack([s[k] >= THR[k][test_idx] for k in P.PROBES], 1).any(1)
-        rec[test_idx] = d.astype(int)
-        P.free(model)
-    REC[name] = {'recovered': rec.tolist(), 'rate': float(rec.mean())}
-    P.save_json(REC[name], path); print(name, 'recovery rate', round(rec.mean(), 3))
-TRUTH = {n: float(np.clip(REC[n]['rate'] - REC['retain']['rate'], 0, 1)) for n in UNLEARNED}
+REC = {n: P.detect(RSCORES[n], THR).max(1) for n in RSCORES}
+for n, r in REC.items():
+    print(f'{n:9s} recovery rate after relearning: {r.mean():.3f}')
+TRUTH = {n: float(np.clip(REC[n].mean() - REC['retain'].mean(), 0, 1)) for n in UNLEARNED}
 print('ground truth psi*:', TRUTH)
+P.save_json({'recovery': {n: float(r.mean()) for n, r in REC.items()}, 'truth': TRUTH}, f'{OUT}/relearn_summary.json')
 """)
 
 md("""

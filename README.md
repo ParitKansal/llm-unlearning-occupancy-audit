@@ -14,9 +14,10 @@ Status: **kill experiment ready, not run.**
 | `02_experiments/01_kill/` | `PREREG.md` (go / no-go rule), `kill_experiment.ipynb` (Colab), `occ.py`, `probes.py`, `test_occ.py`, `make_notebook.py` |
 
 ## Run the kill experiment
-1. Open `02_experiments/01_kill/kill_experiment.ipynb` in Colab (A100).
-2. Run all. Results go to `MyDrive/occupancy_unlearning/kill_v1/`; reruns resume.
-3. The last cell prints the verdict (GO / NO-GO / INCONCLUSIVE) and writes `GATE.json`.
+Fast (parallel, ~40 min): open `02_experiments/01_kill/kill_experiment.ipynb` in 4 Colab A100 sessions with
+`RUN = ['full', 'retain']`, `['GradDiff']`, `['NPO']`, `['RMU']` (section 3), Run all in each. When all 4 finish, open
+one fresh session with `RUN = []` and Run all: it prints the verdict (GO / NO-GO / INCONCLUSIVE) and writes `GATE.json`.
+Results go to `MyDrive/occupancy_unlearning/kill_v1/`; reruns resume.
 
 Edit `occ.py` / `probes.py`, then `python make_notebook.py` to rebuild the notebook. `python test_occ.py` checks the
 estimator on simulated data (CPU).
