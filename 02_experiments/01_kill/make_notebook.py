@@ -236,12 +236,61 @@ P.save_json({'rows': rows, 'd': d, 'anyk_close_all': anyk_close_all, 'gof_fail_a
              'verdict': verdict, 'truth': TRUTH, 'fpr': FPR, 'full_direct': float(full_direct)}, f'{OUT}/GATE.json')
 """)
 
-nb = {"cells": cells, "metadata": {"accelerator": "GPU", "colab": {"gpuType": "A100", "provenance": []},
-                                   "kernelspec": {"display_name": "Python 3", "name": "python3"},
-                                   "language_info": {"name": "python"}},
-      "nbformat": 4, "nbformat_minor": 5}
-for c in nb["cells"]:
-    src = c["source"]
-    c["source"] = [l + "\n" for l in src.split("\n")[:-1]] + [src.split("\n")[-1]]
-(HERE / "kill_experiment.ipynb").write_text(json.dumps(nb, indent=1))
-print("wrote kill_experiment.ipynb with", len(cells), "cells")
+def src(c):
+    return c["source"] if isinstance(c["source"], str) else "".join(c["source"])
+
+
+def save(name, cs, gpu=True):
+    nb = {"cells": [dict(c) for c in cs], "metadata": {"colab": {"provenance": []},
+          "kernelspec": {"display_name": "Python 3", "name": "python3"}, "language_info": {"name": "python"}},
+          "nbformat": 4, "nbformat_minor": 5}
+    if gpu:
+        nb["metadata"].update({"accelerator": "GPU"})
+        nb["metadata"]["colab"]["gpuType"] = "A100"
+    for c in nb["cells"]:
+        t = src(c)
+        c["source"] = [l + "\n" for l in t.split("\n")[:-1]] + [t.split("\n")[-1]]
+    (HERE / name).write_text(json.dumps(nb, indent=1))
+    print("wrote", name, "with", len(cs), "cells")
+
+
+def find(prefix):
+    return next(k for k, c in enumerate(cells) if src(c).lstrip().startswith(prefix))
+
+
+# Single-session notebook (everything, RUN = all models)
+single = [dict(c) for c in cells]
+k_cfg = find("import numpy as np, torch, probes as P")
+single[k_cfg] = dict(single[k_cfg], source=src(single[k_cfg]).replace("RUN = ['full', 'retain']", "RUN = list(MODELS)"))
+save("kill_experiment.ipynb", single)
+
+# Shared pieces
+k_setup = find("!pip")
+k_code_md, k_occ, k_probes = find("## 1. Code"), find("%%writefile occ.py"), find("%%writefile probes.py")
+k_gpu_md, k_gpu = find("## 4. GPU work"), find("for name in RUN:")
+k_an = find("## Analysis")
+base = [cells[k_setup], cells[k_code_md], cells[k_occ], cells[k_probes]]
+
+WORKERS = [("1_worker_full_retain", ["full", "retain"], "probes on the full and retain-only models, relearning on retain-only (~35-40 min)"),
+           ("2_worker_GradDiff", ["GradDiff"], "probes and relearning on the GradDiff-unlearned model (~25-30 min)"),
+           ("3_worker_NPO", ["NPO"], "probes and relearning on the NPO-unlearned model (~25-30 min)"),
+           ("4_worker_RMU", ["RMU"], "probes and relearning on the RMU-unlearned model (~25-30 min)")]
+for name, run, what in WORKERS:
+    title = {"cell_type": "markdown", "metadata": {}, "source": f"""# Kill experiment, worker {name[0]} of 4: {', '.join(run)}
+
+This notebook does: {what}. Runtime: **A100 GPU**. Then **Run all**.
+
+Run the 4 worker notebooks at the same time in 4 Colab sessions. When all 4 print **WORKER DONE**, open
+`5_analysis.ipynb` in a fresh session (CPU is enough) and Run all to get the verdict. Rerunning resumes from Drive."""}
+    cfg = dict(cells[k_cfg], source=src(cells[k_cfg]).replace("RUN = ['full', 'retain']", f"RUN = {run!r}"))
+    done = {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": f"print('WORKER DONE: {name}. Results are on Drive in', OUT)"}
+    save(f"{name}.ipynb", [title] + base + [cells[k_cfg - 1], cfg, cells[k_gpu_md], cells[k_gpu], done])
+
+title = {"cell_type": "markdown", "metadata": {}, "source": """# Kill experiment, step 5: analysis and verdict
+
+Run this **after all 4 worker notebooks print WORKER DONE**. A CPU runtime is enough (~5-10 min). Run all.
+It calibrates detections on the retain-only model, fits the occupancy models, computes the relearning ground truth, and
+applies the pre-registered gate (`PREREG.md`). The last line is the verdict."""}
+cfg = dict(cells[k_cfg], source=src(cells[k_cfg]).replace("RUN = ['full', 'retain']", "RUN = []"))
+save("5_analysis.ipynb", [title] + base + [cells[k_cfg - 1], cfg] + cells[k_an:], gpu=False)
