@@ -27,11 +27,11 @@ if __name__ == "__main__":
     print(f"true psi {psi}")
     print(f"Mh psi-hat mean {rows[:,0].mean():.3f} (sd {rows[:,0].std():.3f}); 95% CI coverage {cover:.2f}")
     print(f"single-probe mean {rows[:,3].mean():.3f}; any-of-K mean {rows[:,4].mean():.3f}")
-    # retain-only control: nothing stored, only false positives
-    Y0, _ = occ.simulate(400, 0.0, A, F, seed=99)
-    r0 = occ.fit(Y0, F, "Mh")
-    print(f"control (psi=0): psi-hat {r0['psi']:.3f}, any-of-K {occ.naive_estimates(Y0)['any_of_K']:.3f}")
+    # retain-only control: nothing stored, only false positives (5%, the calibration ceiling)
+    F5 = np.full(K, 0.05)
+    c = np.array([occ.fit(occ.simulate(400, 0.0, A, F5, seed=s)[0], F5, "Mh")["psi"] for s in range(20)])
+    print(f"control (psi=0, f=5%): psi-hat mean {c.mean():.3f}, max {c.max():.3f} over 20 seeds")
     assert cover >= 0.85, cover
     assert abs(rows[:, 0].mean() - psi) < 0.06
-    assert r0["psi"] < 0.05
+    assert c.max() <= 0.05, c.max()
     print("PASS")

@@ -13,6 +13,11 @@ Models:
     "Mh2" logit p_ij = a_j + b * c_i          (two latent fact classes, c_i ~ Bernoulli(w))
 
 Mh is the pre-registered primary model; M0 and Mh2 are sensitivity checks.
+
+Estimand ("detectably stored"): a stored fact must be detectable above noise. Without this, a "stored" class whose
+detection rates equal the false-positive rates is indistinguishable from "absent", and psi is not identified when
+little is stored (found in simulation, 2026-10-05). Constraint: mean_j p_j - mean_j f_j >= MIN_EXCESS, where p_j is
+the detection probability of the baseline stored class (median fact for Mh, lower class for Mh2).
 Under heterogeneity, psi is only weakly identified (Link 2003), which is why all three are reported.
 """
 import numpy as np
@@ -23,6 +28,8 @@ GH_X, GH_W = np.polynomial.hermite_e.hermegauss(40)   # probabilists' Hermite: w
 GH_LOGW = np.log(GH_W / GH_W.sum())
 
 MODELS = ("M0", "Mh", "Mh2")
+MIN_EXCESS = 0.10
+PENALTY = 1e4
 
 
 def _n_params(model, K):
@@ -54,15 +61,16 @@ def _loglik_absent(Y, f):
     return (Y * np.log(f) + (1 - Y) * np.log1p(-f)).sum(1)
 
 
-def negloglik(theta, Y, f, model):
+def negloglik(theta, Y, f, model, min_excess=MIN_EXCESS):
     K = Y.shape[1]
     lpsi, a, extra = theta[0], theta[1:1 + K], theta[1 + K:]
     l1 = log_expit(lpsi) + _loglik_stored(Y, a, model, extra)
     l0 = log_expit(-lpsi) + _loglik_absent(Y, f)
-    return -np.logaddexp(l1, l0).sum()
+    gap = min_excess - (expit(a).mean() - np.mean(f))
+    return -np.logaddexp(l1, l0).sum() + PENALTY * max(gap, 0.0) ** 2
 
 
-def fit(Y, f=None, model="Mh", n_starts=6, seed=0):
+def fit(Y, f=None, model="Mh", n_starts=6, seed=0, min_excess=MIN_EXCESS):
     """Maximum likelihood fit. Returns dict with psi, p (per probe, at e=0), sigma/extra, nll, aic."""
     Y = np.asarray(Y, float)
     n, K = Y.shape
@@ -73,7 +81,7 @@ def fit(Y, f=None, model="Mh", n_starts=6, seed=0):
         th = np.concatenate([[rng.normal(0, 1.5)], rng.normal(0, 1.5, K),
                              {"M0": [], "Mh": [rng.normal(0, 0.5)], "Mh2": [rng.normal(2, 1), rng.normal(0, 1)]}[model]])
         bounds = [(-12, 12)] + [(-12, 12)] * K + {"M0": [], "Mh": [(-4, 2.5)], "Mh2": [(0, 12), (-8, 8)]}[model]
-        r = minimize(negloglik, th, args=(Y, f, model), method="L-BFGS-B", bounds=bounds)
+        r = minimize(negloglik, th, args=(Y, f, model, min_excess), method="L-BFGS-B", bounds=bounds)
         if best is None or r.fun < best.fun:
             best = r
     th = best.x
