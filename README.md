@@ -5,7 +5,7 @@ Today one failed probe counts as "forgotten". Ecology treats one empty visit as 
 uses occupancy models to separate presence (ψ) from detection (p). We bring that to unlearning: each fact is a site,
 each probe type a visit, and the output is the share of the forget set still stored, with a confidence interval.
 
-Status: **kill experiment ready, not run.**
+Status: **kill experiment v1 run 2026-10-05: NO-GO** (see `02_experiments/01_kill/RESULTS_v1.md`).
 
 | Folder | Contents |
 |---|---|
