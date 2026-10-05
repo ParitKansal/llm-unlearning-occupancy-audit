@@ -137,9 +137,10 @@ for name, Y in DET.items():
 md("""
 ## 7. Ground truth by relearning (Deeb & Roger 2024 style; ~8 short fine-tunes)
 For each unlearned model and the retain-only control: fine-tune on the facts of one author half (3 epochs, lr 1e-5),
-then test the *other* half with the direct, paraphrase and sampled16 probes. A fact counts as recovered if any of the
-three detects it. Ground truth ψ* = recovery(unlearned) − recovery(retain-only after the same relearning), clipped to
-[0, 1]. The subtraction removes facts that relearning could teach from scratch.
+with loss on question and answer tokens, then test the *other* half with all 10 probes. A fact counts as recovered if
+any probe detects it. Ground truth ψ* = recovery(unlearned) − recovery(retain-only after the same relearning), clipped to
+[0, 1]. The subtraction removes facts that relearning could teach from scratch. ψ* is a lower bound on what is stored
+(a failed recovery does not prove removal).
 """)
 code("""
 REC = {}
@@ -152,8 +153,8 @@ for name in UNLEARNED + ['retain']:
         train = [facts[i] for i in np.where(halves != h)[0]]
         test_idx = np.where(halves == h)[0]
         tok, model = P.relearn(MODELS[name], train, epochs=3, lr=1e-5, bs=8, seed=h)
-        s, _ = P.run_probes(tok, model, [facts[i] for i in test_idx], FEWSHOT, probes=['direct', 'paraphrase', 'sampled16'])
-        d = np.stack([s[k] >= THR[k][test_idx] for k in ('direct', 'paraphrase', 'sampled16')], 1).any(1)
+        s, _ = P.run_probes(tok, model, [facts[i] for i in test_idx], FEWSHOT)
+        d = np.stack([s[k] >= THR[k][test_idx] for k in P.PROBES], 1).any(1)
         rec[test_idx] = d.astype(int)
         P.free(model)
     REC[name] = {'recovered': rec.tolist(), 'rate': float(rec.mean())}

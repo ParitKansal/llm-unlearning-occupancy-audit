@@ -16,7 +16,7 @@ After unlearning, what fraction ψ of the forget set is still stored in the mode
 - **Detection:** score ≥ threshold. Thresholds are cross-fitted: for each author half, the threshold makes the retain-only model fire on ≤ 5% of the other half (grid 0.5–1.0; MCQ margin grid 0–3). The held-out false-positive rate f_j enters the model as a known constant.
 - **Estimand:** ψ = share of the forget set that is *detectably stored*: a stored fact's average per-probe detection probability must exceed the average false-positive rate by at least 0.10 (`occ.MIN_EXCESS`). Reason: without this, a "stored" class detected only at the false-positive rate is indistinguishable from "absent" and ψ is not identified; a simulation on 2026-10-05 (before any GPU run) gave ψ̂ up to 0.63 when nothing was stored. With the constraint, ψ̂ ≤ 0.043 in 20/20 null simulations at f = 5%, and ψ = 0.45 is recovered as 0.431 ± 0.029.
 - **Estimator:** single-season occupancy model with known false positives. Primary: `Mh` (probe effects + normal fact random effect). Sensitivity: `M0`, `Mh2` (two latent classes). 95% CI from 300 bootstrap resamples over facts. Goodness of fit: parametric bootstrap on the distribution of detection counts (B = 100).
-- **Ground truth ψ\*:** relearning in the style of Deeb & Roger (arXiv 2410.08827). Fine-tune on one author half (3 epochs, lr 1e-5, batch 8, full fine-tune), test the other half with direct, paraphrase and sampled16 probes; recovered = any detection. ψ\* = recovery(unlearned) − recovery(retain-only with the same relearning), clipped to [0, 1].
+- **Ground truth ψ\*:** relearning in the style of Deeb & Roger (arXiv 2410.08827). Fine-tune on one author half (3 epochs, lr 1e-5, batch 8, full fine-tune, loss on question and answer tokens), test the other half with all 10 probes; recovered = any detection. ψ\* = recovery(unlearned) − recovery(retain-only with the same relearning), clipped to [0, 1]. ψ\* is a **lower bound** on stored knowledge (failed recovery does not prove removal). Design updated 2026-10-05 after reading the ICLR 2025 reviews of Deeb & Roger (`01_literature/deeb_roger_iclr2025_reviews.md`), before any GPU run.
 - **Precondition:** the full model's direct-probe detection rate ≥ 0.50. If not, the prompt or scoring is broken; fix it and rerun; do not interpret.
 
 ## Decision rule
@@ -30,7 +30,7 @@ Per unlearned checkpoint:
 - **INCONCLUSIVE:** anything else. Write it up and decide with the author; no threshold changes after seeing results.
 
 ## Compute
-About 2 A100-hours (5 models × ~10 min probing; 8 relearning runs; bootstrap on CPU). Budget cap for this stage: 6 A100-hours.
+About 2–3 A100-hours (5 models × ~10 min probing; 8 relearning runs, each followed by all 10 probes; bootstrap on CPU). Budget cap for this stage: 6 A100-hours.
 
 ## Known risks
 1. Relearning can teach as well as reveal; the retain-only subtraction is the control and may be noisy.

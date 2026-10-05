@@ -167,7 +167,7 @@ def detect(scores, thr, probes=PROBES):
 
 
 def relearn(model_id, facts, epochs=3, lr=1e-5, bs=8, seed=0):
-    """Fine-tune a copy of the model on the given facts (loss on answer tokens only). Returns (tok, model)."""
+    """Fine-tune a copy of the model on the given facts (loss on prompt and answer tokens). Returns (tok, model)."""
     torch.manual_seed(seed)
     tok = AutoTokenizer.from_pretrained(model_id)
     if tok.pad_token is None:
@@ -179,7 +179,7 @@ def relearn(model_id, facts, epochs=3, lr=1e-5, bs=8, seed=0):
     for f in facts:
         p = tok(chat(tok, f["question"]), add_special_tokens=False)["input_ids"]
         a = tok(f["answer"] + tok.eos_token, add_special_tokens=False)["input_ids"]
-        data.append((p + a, [-100] * len(p) + a))
+        data.append((p + a, p + a))   # loss on all tokens: Deeb & Roger found question + answer loss recovers most
     rng = np.random.default_rng(seed)
     for _ in range(epochs):
         rng.shuffle(data)
