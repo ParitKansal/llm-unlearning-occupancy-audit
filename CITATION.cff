@@ -11,6 +11,14 @@ url: "https://github.com/ParitKansal/llm-unlearning-occupancy-audit"
 date-released: 2026-10-05
 version: "1.0.0"
 license: MIT
+doi: "10.5281/zenodo.23205921"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23205921"
+    description: "Concept DOI: all versions, resolves to the latest"
+  - type: doi
+    value: "10.5281/zenodo.23205922"
+    description: "Version 1.0.0"
 abstract: >-
   Tests whether ecological occupancy models, which separate presence from imperfect detection, can estimate how much
   "unlearned" knowledge an LLM still stores, using repeated heterogeneous probes. A pre-registered kill experiment on
